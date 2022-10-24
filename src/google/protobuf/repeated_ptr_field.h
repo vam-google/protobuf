@@ -916,6 +916,7 @@ class RepeatedPtrField final : private internal::RepeatedPtrFieldBase {
  public:
   constexpr RepeatedPtrField();
   explicit RepeatedPtrField(Arena* arena);
+  RepeatedPtrField(internal::InternalVisibility, Arena* arena);
 
   RepeatedPtrField(const RepeatedPtrField& other);
 
@@ -1228,6 +1229,12 @@ constexpr RepeatedPtrField<Element>::RepeatedPtrField()
 
 template <typename Element>
 inline RepeatedPtrField<Element>::RepeatedPtrField(Arena* arena)
+    : RepeatedPtrFieldBase(arena) {
+}
+
+template <typename Element>
+inline RepeatedPtrField<Element>::RepeatedPtrField(internal::InternalVisibility,
+                                                   Arena* arena)
     : RepeatedPtrFieldBase(arena) {}
 
 template <typename Element>

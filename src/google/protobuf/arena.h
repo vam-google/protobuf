@@ -51,6 +51,7 @@ using type_info = ::type_info;
 #include <type_traits>
 #include "google/protobuf/arena_config.h"
 #include "google/protobuf/arena_impl.h"
+#include "google/protobuf/internal_visibility.h"
 #include "google/protobuf/port.h"
 
 // Must be included last.
@@ -463,13 +464,21 @@ class PROTOBUF_EXPORT PROTOBUF_ALIGNAS(8) Arena final {
                                              sizeof(char)>
         is_arena_constructable;
 
+    template <typename... Args>
+    static T* Construct(void* ptr, std::true_type, Args&&... args) {
+      return new (ptr)
+          T(internal::InternalVisibility{}, static_cast<Args&&>(args)...);
+    }
 
     template <typename... Args>
-    static T* Construct(void* ptr, Args&&... args) {
+    static T* Construct(void* ptr, std::false_type, Args&&... args) {
       return new (ptr) T(static_cast<Args&&>(args)...);
     }
 
-    static inline PROTOBUF_ALWAYS_INLINE T* New() {
+    static inline PROTOBUF_ALWAYS_INLINE T* New(std::true_type) {
+      return new T(internal::InternalVisibility{}, nullptr);
+    }
+    static inline PROTOBUF_ALWAYS_INLINE T* New(std::false_type) {
       return new T(nullptr);
     }
 
@@ -556,7 +565,8 @@ class PROTOBUF_EXPORT PROTOBUF_ALIGNAS(8) Arena final {
     if (arena == nullptr) {
       // Generated arena constructor T(Arena*) is protected. Call via
       // InternalHelper.
-      return InternalHelper<T>::New();
+      return InternalHelper<T>::New(
+          std::is_base_of<internal::RepeatedPtrFieldBase, T>());
     } else {
       return arena->DoCreateMessage<T>();
     }
@@ -617,7 +627,8 @@ class PROTOBUF_EXPORT PROTOBUF_ALIGNAS(8) Arena final {
                          internal::ObjectDestructor<
                              InternalHelper<T>::is_destructor_skippable::value,
                              T>::destructor),
-        this, std::forward<Args>(args)...);
+        std::is_base_of<internal::RepeatedPtrFieldBase, T>(), this,
+        std::forward<Args>(args)...);
   }
 
   // CreateInArenaStorage is used to implement map field. Without it,
@@ -638,7 +649,9 @@ class PROTOBUF_EXPORT PROTOBUF_ALIGNAS(8) Arena final {
   template <typename T, typename... Args>
   static void CreateInArenaStorageInternal(T* ptr, Arena* arena,
                                            std::true_type, Args&&... args) {
-    InternalHelper<T>::Construct(ptr, arena, std::forward<Args>(args)...);
+    InternalHelper<T>::Construct(
+        ptr, std::is_base_of<internal::RepeatedPtrFieldBase, T>(), arena,
+        std::forward<Args>(args)...);
   }
   template <typename T, typename... Args>
   static void CreateInArenaStorageInternal(T* ptr, Arena* /* arena */,
