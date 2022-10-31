@@ -462,6 +462,20 @@ PROTOBUF_NOINLINE const char* TcParser::FastGtS2(PROTOBUF_TC_PARAM_DECL) {
       PROTOBUF_TC_PARAM_PASS);
 }
 
+template <typename TagType>
+const char* TcParser::LazyMessage(PROTOBUF_TC_PARAM_DECL) {
+  GOOGLE_LOG(FATAL) << "Unimplemented";
+  return nullptr;
+}
+
+PROTOBUF_NOINLINE const char* TcParser::FastMlS1(PROTOBUF_TC_PARAM_DECL) {
+  PROTOBUF_MUSTTAIL return LazyMessage<uint8_t>(PROTOBUF_TC_PARAM_PASS);
+}
+
+PROTOBUF_NOINLINE const char* TcParser::FastMlS2(PROTOBUF_TC_PARAM_DECL) {
+  PROTOBUF_MUSTTAIL return LazyMessage<uint16_t>(PROTOBUF_TC_PARAM_PASS);
+}
+
 template <typename TagType, bool group_coding, bool aux_is_table>
 inline PROTOBUF_ALWAYS_INLINE const char* TcParser::RepeatedParseMessageAuxImpl(
     PROTOBUF_TC_PARAM_DECL) {
@@ -1766,6 +1780,14 @@ bool TcParser::ChangeOneof(const TcParseTableBase* table,
         }
         break;
       }
+      case field_layout::kRepLazy: {
+        // DO NOT SUBMIT
+        auto& field = RefAt<LazyField*>(msg, current_entry->offset);
+        if (!msg->GetArenaForAllocation()) {
+          delete field;
+        }
+        break;
+      }
       default:
         GOOGLE_LOG(DFATAL) << "message rep not handled: "
                     << (current_rep >> field_layout::kRepShift);
@@ -2271,6 +2293,11 @@ PROTOBUF_NOINLINE const char* TcParser::MpRepeatedString(
   return ToParseLoop(PROTOBUF_TC_PARAM_PASS);
 }
 
+const char* TcParser::MpLazyMessage(PROTOBUF_TC_PARAM_DECL) {
+  GOOGLE_LOG(FATAL) << "Unimplemented";
+  return nullptr;
+}
+
 template <bool is_split>
 PROTOBUF_NOINLINE const char* TcParser::MpMessage(PROTOBUF_TC_PARAM_DECL) {
   const auto& entry = RefAt<FieldEntry>(table, data.entry_offset());
@@ -2291,7 +2318,8 @@ PROTOBUF_NOINLINE const char* TcParser::MpMessage(PROTOBUF_TC_PARAM_DECL) {
   switch (rep) {
     case field_layout::kRepMessage:
       if (decoded_wiretype != WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
-        goto fallback;
+      fallback:
+        PROTOBUF_MUSTTAIL return table->fallback(PROTOBUF_TC_PARAM_PASS);
       }
       break;
     case field_layout::kRepGroup:
@@ -2299,12 +2327,11 @@ PROTOBUF_NOINLINE const char* TcParser::MpMessage(PROTOBUF_TC_PARAM_DECL) {
         goto fallback;
       }
       break;
-    default: {
-    fallback:
-      // Lazy and implicit weak fields are handled by generated code:
-      // TODO(b/210762816): support these.
-      PROTOBUF_MUSTTAIL return table->fallback(PROTOBUF_TC_PARAM_PASS);
-    }
+    case field_layout::kRepLazy:
+      if (decoded_wiretype != WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+        goto fallback;
+      }
+      PROTOBUF_MUSTTAIL return MpLazyMessage(PROTOBUF_TC_PARAM_PASS);
   }
 
   const bool is_oneof = card == field_layout::kFcOneof;
