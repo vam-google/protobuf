@@ -2580,6 +2580,11 @@ void TextFormat::Printer::PrintFieldValue(const Message& message,
   }
 #endif
 #endif
+  if (redact_debug_string_ && field->options().debug_redact()) {
+    std::string redacted_value = "[REDACTED]";
+    generator->PrintString(redacted_value);
+    return;
+  }
 
   switch (field->cpp_type()) {
 #define OUTPUT_FIELD(CPPTYPE, METHOD)                                \
