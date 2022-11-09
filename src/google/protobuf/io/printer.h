@@ -64,6 +64,11 @@
 namespace google {
 namespace protobuf {
 namespace io {
+enum AnnotationSemantic : int {
+  kSemanticNone = 0,
+  kSemanticSet = 1,
+  kSemanticAlias = 2
+};
 // Records annotations about a Printer's output.
 class PROTOBUF_EXPORT AnnotationCollector {
  public:
@@ -400,6 +405,7 @@ class PROTOBUF_EXPORT Printer {
   struct AnnotationRecord {
     std::vector<int> path;
     std::string file_path;
+    AnnotationSemantic semantic = kSemanticNone;
 
     // AnnotationRecord's constructors are *not* marked as explicit,
     // specifically so that it is possible to construct a
@@ -422,6 +428,16 @@ class PROTOBUF_EXPORT Printer {
     AnnotationRecord(const Desc* desc)  // NOLINT(google-explicit-constructor)
         : file_path(desc->file()->name()) {
       desc->GetLocationPath(&path);
+    }
+
+    template <typename Desc,
+              // This SFINAE clause excludes char* from matching this
+              // constructor.
+              std::enable_if_t<std::is_class<Desc>::value, int> = 0>
+    AnnotationRecord(std::pair<const Desc*, AnnotationSemantic>
+                         arg)  // NOLINT(google-explicit-constructor)
+        : file_path(arg.fisrt->file()->name()), semantic(arg.second) {
+      arg.first->GetLocationPath(&path);
     }
   };
 
