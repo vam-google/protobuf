@@ -1428,9 +1428,8 @@ public abstract class GeneratedMessageLite<
 
     private static final long serialVersionUID = 0L;
 
-    // since v3.6.1
+    since v3.6.1
     private final Class<?> messageClass;
-    // only included for backwards compatibility before messageClass was added
     private final String messageClassName;
     private final byte[] asBytes;
 
@@ -1441,7 +1440,7 @@ public abstract class GeneratedMessageLite<
      */
     SerializedForm(MessageLite regularForm) {
       messageClass = regularForm.getClass();
-      messageClassName = messageClass.getName();
+      messageClassName = regularForm.getClass().getName();
       asBytes = regularForm.toByteArray();
     }
 
@@ -1500,7 +1499,7 @@ public abstract class GeneratedMessageLite<
     }
 
     private Class<?> resolveMessageClass() throws ClassNotFoundException {
-      return messageClass != null ? messageClass : Class.forName(messageClassName);
+     return messageClass != null ? messageClass : Class.forName(messageClassName);
     }
   }
 
