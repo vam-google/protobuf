@@ -64,6 +64,18 @@ cc_library(
     ],
 )
 
+
+cc_library(
+    name = "differencer_headers",
+    hdrs = [
+        "field_comparator.h",
+        "message_differencer.h",
+    ],
+    strip_include_prefix = "/src",
+    visibility = ["//visibility:public"],
+)
+
+
 cc_test(
     name = "field_comparator_test",
     srcs = ["field_comparator_test.cc"],
@@ -129,6 +141,13 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "field_mask_util_headers",
+    hdrs = ["field_mask_util.h"],
+    strip_include_prefix = "/src",
+    visibility = ["//visibility:public"],
+)
+
 cc_test(
     name = "field_mask_util_test",
     srcs = ["field_mask_util_test.cc"],
@@ -157,6 +176,14 @@ cc_library(
 )
 
 cc_library(
+    name = "json_util_headers",
+    hdrs = ["json_util.h"],
+    strip_include_prefix = "/src",
+    visibility = ["//visibility:public"],
+    deps = ["//src/google/protobuf/json"],
+)
+
+cc_library(
     name = "time_util",
     srcs = ["time_util.cc"],
     hdrs = ["time_util.h"],
@@ -177,6 +204,13 @@ cc_library(
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/time",
     ],
+)
+
+cc_library(
+    name = "time_util_headers",
+    hdrs = ["time_util.h"],
+    strip_include_prefix = "/src",
+    visibility = ["//visibility:public"],
 )
 
 cc_test(
@@ -218,6 +252,16 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
     ],
+)
+
+cc_library(
+    name = "type_resolver_headers",
+     hdrs = [
+        "type_resolver.h",
+        "type_resolver_util.h",
+    ],
+    strip_include_prefix = "/src",
+    visibility = ["//visibility:public"],
 )
 
 cc_test(

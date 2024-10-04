@@ -57,6 +57,19 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "stubs_headers",
+    strip_include_prefix = "/src",
+    hdrs = [
+        "callback.h",
+        "common.h",
+        "platform_macros.h",
+        "port.h",
+        "status_macros.h",
+    ],
+    visibility = ["//visibility:public"],
+)
+
 cc_test(
     name = "stubs_test",
     srcs = [

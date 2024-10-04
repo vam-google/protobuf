@@ -71,6 +71,21 @@ def _CsharpOuts(srcs):
         for src in srcs
     ]
 
+def _CcHdrs(srcs, use_grpc_plugin = False):
+    ret = [s[:-len(".proto")] + ".pb.h" for s in srcs]
+    if use_grpc_plugin:
+        ret += [s[:-len(".proto")] + ".grpc.pb.h" for s in srcs]
+    return ret
+
+def _CcSrcs(srcs, use_grpc_plugin = False):
+    ret = [s[:-len(".proto")] + ".pb.cc" for s in srcs]
+    if use_grpc_plugin:
+        ret += [s[:-len(".proto")] + ".grpc.pb.cc" for s in srcs]
+    return ret
+
+def _CcOuts(srcs, use_grpc_plugin = False):
+    return _CcHdrs(srcs, use_grpc_plugin) + _CcSrcs(srcs, use_grpc_plugin)
+
 ProtoGenInfo = provider(
     fields = ["srcs", "import_flags", "deps"],
 )
@@ -146,6 +161,8 @@ def _proto_gen_impl(ctx):
 
         outs = []
         for lang in langs:
+            if lang == "cpp":
+                outs.extend(_CcOuts([src.basename], use_grpc_plugin = use_grpc_plugin))
             if lang == "csharp":
                 outs.extend(_CsharpOuts([src.basename]))
             elif lang == "objc":
@@ -274,6 +291,33 @@ _proto_gen = rule(
     output_to_genfiles = True,
     implementation = _proto_gen_impl,
 )
+
+proto_gen = _proto_gen
+
+def _adapt_proto_library_impl(ctx):
+    deps = [dep[ProtoInfo] for dep in ctx.attr.deps]
+
+    srcs = [src for dep in deps for src in dep.direct_sources]
+
+    return [
+        ProtoGenInfo(
+            srcs = srcs,
+            import_flags = ["-I{}".format(path) for dep in deps for path in dep.transitive_proto_path.to_list()],
+            deps = srcs,
+        ),
+    ]
+
+adapt_proto_library = rule(
+    implementation = _adapt_proto_library_impl,
+    attrs = {
+        "deps": attr.label_list(
+            mandatory = True,
+            providers = [ProtoInfo],
+        ),
+    },
+    doc = "Adapts `proto_library` from `@rules_proto` to be used with `{cc,py}_proto_library` from this file.",
+)
+
 
 def _internal_gen_well_known_protos_java_impl(ctx):
     args = ctx.actions.args()

@@ -42,6 +42,15 @@ cc_library(
 )
 
 cc_library(
+    name = "io_headers",
+    hdrs = glob([
+        "**/*.h",
+        "**/*.inc",
+    ]),
+    strip_include_prefix = "/src",
+)
+
+cc_library(
     name = "test_zero_copy_stream",
     testonly = 1,
     hdrs = ["test_zero_copy_stream.h"],
